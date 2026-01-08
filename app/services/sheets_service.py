@@ -2,8 +2,10 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import os
-from typing import Dict, Optional
+import json
+from typing import Dict
 from app.config.settings import settings
+
 
 class SheetsService:
     def __init__(self):
@@ -12,7 +14,7 @@ class SheetsService:
         self.client = None
         self.sheet = None
         self._initialize()
-    
+
     def _initialize(self):
         """Initialize Google Sheets connection"""
         try:
@@ -20,56 +22,42 @@ class SheetsService:
                 'https://spreadsheets.google.com/feeds',
                 'https://www.googleapis.com/auth/drive'
             ]
-            
-            creds = ServiceAccountCredentials.from_json_keyfile_name(
-                self.credentials_file, 
-                scope
-            )
+
+            # Try to get credentials from environment variable first (production)
+            creds_json = os.getenv('GOOGLE_CREDENTIALS_JSON')
+
+            if creds_json:
+                # Production: Use JSON from environment variable
+                creds_dict = json.loads(creds_json)
+                creds = ServiceAccountCredentials.from_json_keyfile_dict(
+                    creds_dict,
+                    scope
+                )
+                print("✅ Using Google credentials from environment variable")
+            else:
+                # Development: Use file
+                creds = ServiceAccountCredentials.from_json_keyfile_name(
+                    self.credentials_file,
+                    scope
+                )
+                print("✅ Using Google credentials from file")
+
             self.client = gspread.authorize(creds)
-            spreadsheet = self.client.open_by_key(self.sheet_id)
-            worksheets = spreadsheet.worksheets()
-            print(f"📊 Spreadsheet has {len(worksheets)} worksheets:")
-            for ws in worksheets:
-                print(f"  - {ws.title} (rows: {ws.row_count}, cols: {ws.col_count})")
-            
-            self.sheet = spreadsheet.sheet1  # Use the first worksheet
-            print(f"📊 Using worksheet: {self.sheet.title}")
-            print(f"📊 Sheet URL: https://docs.google.com/spreadsheets/d/{self.sheet_id}/edit")
-            
-            # Check current sheet contents
-            try:
-                all_values = self.sheet.get_all_values()
-                print(f"📊 Sheet has {len(all_values)} rows")
-                if all_values:
-                    print(f"📊 First row: {all_values[0]}")
-                    print(f"📊 Last row: {all_values[-1]}")
-            except Exception as e:
-                print(f"❌ Could not read sheet contents: {e}")
+            self.sheet = self.client.open_by_key(self.sheet_id).sheet1
+            print("✅ Google Sheets connected successfully!")
+
         except Exception as e:
             print(f"❌ Google Sheets connection failed: {e}")
-    
+
     def log_booking(self, data: Dict) -> bool:
         """
         Log booking data to Google Sheet
-        
-        Expected data format:
-        {
-            'caller_name': str,
-            'phone_number': str,
-            'symptoms': str,
-            'preferred_date': str,
-            'preferred_time': str,
-            'doctor': str,
-            'status': str (e.g., 'Pending', 'Confirmed', 'Cancelled'),
-            'session_id': str
-                'dob': dob,
-           
-        }
         """
         print(f"📝 LOG_BOOKING called with data: {data}")
+
         try:
             timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            
+
             row = [
                 timestamp,
                 data.get('caller_name', ''),
@@ -82,15 +70,15 @@ class SheetsService:
                 data.get('session_id', ''),
                 data.get('dob', '')
             ]
-            
+
             self.sheet.append_row(row)
-            print(f"✅ Logged booking for {data.get('caller_name')} to Google Sheets")
+            print(f"✅ Logged booking for {data.get('caller_name')}")
             return True
-            
+
         except Exception as e:
             print(f"❌ Failed to log to Google Sheets: {e}")
-            raise Exception(f"Google Sheets logging failed: {e}")  # Raise to show error in API
-    
+            raise Exception(f"Google Sheets logging failed: {e}")
+
     def log_call(self, caller_name: str, phone_number: str, session_id: str) -> bool:
         """Log incoming call (even if no booking made)"""
         try:
@@ -109,11 +97,10 @@ class SheetsService:
         except Exception as e:
             print(f"❌ Failed to log call: {e}")
             return False
-    
+
     def update_booking_status(self, session_id: str, status: str) -> bool:
         """Update status of existing booking"""
         try:
-            # Find the row with matching session_id
             cell = self.sheet.find(session_id)
             if cell:
                 row_num = cell.row
@@ -126,5 +113,6 @@ class SheetsService:
             print(f"❌ Failed to update status: {e}")
             return False
 
-# Create singleton instance
+
+# Singleton instance
 sheets_service = SheetsService()
