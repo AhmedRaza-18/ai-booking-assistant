@@ -3,25 +3,24 @@ services:
   - type: web
     name: ai-booking-assistant
     env: python
-    plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    plan: free        # free tier, spins down when idle
+    region: oregon    # pick closest region
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
+    autoDeploy: true
     envVars:
       - key: PORT
-        value: "10000"
+        value: "10000"        # optional, Render sets default PORT anyway
       - key: ENVIRONMENT
         value: "production"
       - key: APP_NAME
         value: "AI Booking Assistant"
-      - key: APP_VERSION
-        value: "1.0.0"
+      # Add all your other secrets here, e.g., Twilio, Google Sheets, AI keys:
       - key: TWILIO_ACCOUNT_SID
-        value: "<YOUR_TWILIO_SID>"
+        fromDatabase: true
       - key: TWILIO_AUTH_TOKEN
-        value: "<YOUR_TWILIO_AUTH_TOKEN>"
-      - key: TWILIO_PHONE_NUMBER
-        value: "<YOUR_TWILIO_PHONE_NUMBER>"
+        fromDatabase: true
       - key: GOOGLE_CREDENTIALS_JSON
-        value: "<YOUR_GOOGLE_CREDENTIALS_JSON_CONTENT>"
-      - key: FRONTEND_URL
-        value: "*"  # or your frontend URL
+        fromDatabase: true
+      - key: GROQ_API_KEY
+        fromDatabase: true
