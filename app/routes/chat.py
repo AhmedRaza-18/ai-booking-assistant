@@ -268,8 +268,6 @@ def _extract_information_from_message(session, message: str):
         insurance = lead_qualifier.extract_insurance(message)
         if insurance:
             session.update_data("insurance", insurance)
-        if insurance:
-            session.update_data("insurance", insurance)
             return
     
     # GENERAL EXTRACTION - for any state

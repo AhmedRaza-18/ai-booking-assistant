@@ -1,23 +1,27 @@
+# render.yaml
 services:
   - type: web
     name: ai-booking-assistant
     env: python
-    region: oregon
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
-      - key: GROQ_API_KEY
-        sync: false
+      - key: PORT
+        value: "10000"
+      - key: ENVIRONMENT
+        value: "production"
+      - key: APP_NAME
+        value: "AI Booking Assistant"
+      - key: APP_VERSION
+        value: "1.0.0"
       - key: TWILIO_ACCOUNT_SID
-        sync: false
+        value: "<YOUR_TWILIO_SID>"
       - key: TWILIO_AUTH_TOKEN
-        sync: false
+        value: "<YOUR_TWILIO_AUTH_TOKEN>"
       - key: TWILIO_PHONE_NUMBER
-        sync: false
-      - key: GOOGLE_SHEET_ID
-        sync: false
+        value: "<YOUR_TWILIO_PHONE_NUMBER>"
       - key: GOOGLE_CREDENTIALS_JSON
-        sync: false
-      - key: DATABASE_URL
-        value: sqlite:///./data/bookings.db
+        value: "<YOUR_GOOGLE_CREDENTIALS_JSON_CONTENT>"
+      - key: FRONTEND_URL
+        value: "*"  # or your frontend URL

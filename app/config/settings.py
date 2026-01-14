@@ -5,6 +5,10 @@ Updated to support multiple AI providers (Groq, OpenRouter, OpenAI)
 """
 from pydantic_settings import BaseSettings
 from typing import Optional, Literal
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # This will load .env locally, but on Vercel, rely on env vars
 
 class Settings(BaseSettings):
     """
